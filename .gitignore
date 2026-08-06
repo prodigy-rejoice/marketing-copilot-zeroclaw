@@ -127,3 +127,16 @@ target/openapi.json
 /v[0-9]*.toml
 .worktrees/
 .zero-to-5/
+
+# Local instructions & sensitive files
+CLAUDE.md
+CLAUDE.local.md
+CLAUDE.local.toml
+.ite/
+*.env
+*.secret
+*.token
+
+config.toml
+config.toml
+.zeroclaw/

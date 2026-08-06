@@ -92,6 +92,49 @@ pub(crate) fn parse_attachment_markers(message: &str) -> (String, Vec<DiscordAtt
 
 const EMBED_TAG: &str = "[EMBED:";
 
+fn deserialize_flexible_color<'de, D>(deserializer: D) -> Result<Option<u32>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum ColorVal {
+        Num(u32),
+        Str(String),
+    }
+
+    let opt = Option::<ColorVal>::deserialize(deserializer)?;
+    match opt {
+        None => Ok(None),
+        Some(ColorVal::Num(n)) => Ok(Some(n)),
+        Some(ColorVal::Str(s)) => {
+            let s_clean = s
+                .trim()
+                .trim_start_matches('#')
+                .trim_start_matches("0x")
+                .trim_start_matches("0X");
+            u32::from_str_radix(s_clean, 16).map(Some).or(Ok(None))
+        }
+    }
+}
+
+fn deserialize_string_or_number<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum StrOrNum {
+        Str(String),
+        Num(serde_json::Value),
+    }
+
+    match StrOrNum::deserialize(deserializer)? {
+        StrOrNum::Str(s) => Ok(s),
+        StrOrNum::Num(v) => Ok(v.to_string()),
+    }
+}
+
 /// Author-supplied embed shape, deserialized from the `[EMBED:{json}]` payload.
 /// Mirrors [`DiscordEmbed`] but takes bare URL strings for media and is lenient
 /// about unknown keys (an agent typo drops the key, not the whole embed).
@@ -103,7 +146,7 @@ pub(crate) struct EmbedSpec {
     pub(crate) description: Option<String>,
     #[serde(default)]
     pub(crate) url: Option<String>,
-    #[serde(default)]
+    #[serde(default, deserialize_with = "deserialize_flexible_color")]
     pub(crate) color: Option<u32>,
     #[serde(default)]
     pub(crate) timestamp: Option<String>,
@@ -156,16 +199,16 @@ pub(crate) struct EmbedAuthorSpec {
 
 #[derive(Debug, Clone, Default, Deserialize, PartialEq)]
 pub(crate) struct EmbedFieldSpec {
+    #[serde(default, deserialize_with = "deserialize_string_or_number")]
     pub(crate) name: String,
+    #[serde(default, deserialize_with = "deserialize_string_or_number")]
     pub(crate) value: String,
     #[serde(default)]
     pub(crate) inline: bool,
 }
 
 /// Parse `[EMBED:{json}]` markers out of `message`, returning the marker-free
-/// text and the parsed specs in author order. A malformed marker (bad JSON,
-/// missing closing `]`) is left verbatim so the author sees it failed rather
-/// than having it silently vanish.
+/// text and the parsed specs in author order.
 pub(crate) fn parse_embed_markers(message: &str) -> (String, Vec<EmbedSpec>) {
     let mut cleaned = String::with_capacity(message.len());
     let mut specs = Vec::new();

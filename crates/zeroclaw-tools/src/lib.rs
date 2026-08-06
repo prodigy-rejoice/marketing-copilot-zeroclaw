@@ -50,6 +50,7 @@ pub mod knowledge_tool;
 pub mod linkedin;
 pub mod linkedin_client;
 pub mod llm_task;
+pub mod marketing_copilot;
 pub mod mcp_client;
 pub mod mcp_context;
 pub mod mcp_deferred;

@@ -76,6 +76,7 @@ pub use zeroclaw_tools::jira_tool::JiraTool;
 pub use zeroclaw_tools::knowledge_tool::KnowledgeTool;
 pub use zeroclaw_tools::linkedin::LinkedInTool;
 pub use zeroclaw_tools::llm_task::LlmTaskTool;
+pub use zeroclaw_tools::marketing_copilot::MarketingCopilotTool;
 pub use zeroclaw_tools::mcp_client::{McpRegistry, McpServer};
 pub use zeroclaw_tools::mcp_context;
 pub use zeroclaw_tools::mcp_deferred::{
@@ -670,6 +671,7 @@ pub fn all_tools_with_runtime(
         Arc::new(WeatherTool::new()),
         Arc::new(CanvasTool::new(canvas_store.unwrap_or_default())),
         Arc::new(TodoWriteTool::new()),
+        Arc::new(MarketingCopilotTool::with_defaults(security.clone())),
     ];
 
     // A SubAgent runs as an ephemeral clone of its parent and inherits the
