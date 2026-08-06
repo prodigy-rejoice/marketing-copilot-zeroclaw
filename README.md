@@ -1,217 +1,69 @@
-<p align="center">
-  <img src="docs/assets/zeroclaw-banner.png" alt="ZeroClaw" width="600" />
-</p>
+# Marketing Copilot — Zeroclaw Solana Plugin
 
-<h1 align="center">🦀 ZeroClaw — Personal AI Assistant</h1>
+An AI agent, built on [Zeroclaw](https://github.com/zeroclaw-labs/zeroclaw), that reasons about where your marketing budget should go — and, once you approve it, actually spends it, in a real Solana transaction.
 
-<p align="center">
-  <strong>You own the agent. You own the data. You own the machine it runs on.</strong>
-</p>
+Built for the **Superteam Brasil × Zeroclaw "Build Solana-native plugins for Zeroclaw"** bounty.
 
-<p align="center">
-  <a href="https://github.com/zeroclaw-labs/zeroclaw/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/zeroclaw-labs/zeroclaw/ci.yml?branch=master&label=build" alt="Build Status" /></a>
-  <a href="https://github.com/zeroclaw-labs/zeroclaw/releases/latest"><img src="https://img.shields.io/github/v/release/zeroclaw-labs/zeroclaw?label=release" alt="Latest release" /></a>
-  <a href="LICENSE-APACHE"><img src="https://img.shields.io/badge/license-MIT%20OR%20Apache%202.0-blue.svg" alt="License" /></a>
-  <a href="https://www.rust-lang.org"><img src="https://img.shields.io/badge/rust-edition%202024-orange?logo=rust" alt="Rust Edition 2024" /></a>
-  <a href="https://github.com/zeroclaw-labs/zeroclaw/graphs/contributors"><img src="https://img.shields.io/github/contributors/zeroclaw-labs/zeroclaw?color=green" alt="Contributors" /></a>
-  <a href="https://discord.gg/zeroclaw"><img src="https://img.shields.io/badge/Discord-join-5865F2?style=flat&logo=discord&logoColor=white" alt="Discord" /></a>
-</p>
+## What it does
 
-<p align="center">
-  <a href="https://docs.zeroclawlabs.ai/master/en/introduction.html">Docs</a> ·
-  <a href="docs/book/src/philosophy/index.md">Philosophy</a> ·
-  <a href="docs/book/src/getting-started/quickstart.md">Quick start</a> ·
-  <a href="docs/book/src/architecture/overview.md">Architecture</a> ·
-  <a href="https://discord.gg/zeroclaw">Discord</a>
-</p>
+Tell it your channel performance (signups, spend, conversion rate per channel) over Discord, and it:
 
----
+1. Reasons about which channel is the best next spend, using an LLM (Groq)
+2. Enforces a hard budget cap in code — not just a prompt instruction
+3. Asks a human for approval before anything is spent
+4. On approval, executes a real Solana transfer via the Solana CLI
+5. Reports back the reasoning, the amount, and the transaction signature
 
-ZeroClaw is an agent runtime — a single Rust binary you configure and run. It talks to LLM providers (Anthropic, OpenAI, Ollama, and ~20 others), reaches the world through 30+ channels (Discord, Telegram, Matrix, email, voice, webhooks, your own CLI), and acts through tools (shell, browser, HTTP, hardware, custom MCP servers). Everything runs on your machine, with your keys, in your workspace.
-
-Read the [Philosophy](docs/book/src/philosophy/index.md) for the four opinions that shape it.
-
-## Install
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/zeroclaw-labs/zeroclaw/master/install.sh | bash
-```
-
-Or clone and run:
-
-```bash
-git clone https://github.com/zeroclaw-labs/zeroclaw.git
-cd zeroclaw
-./install.sh
-```
-
-The piped installer uses a prebuilt binary when one is available and falls back to a source build otherwise. It skips interactive setup and prints `zeroclaw quickstart` as the next step.
-
-When the platform maps to a supported prebuilt target, running `./install.sh` from a clone in an interactive terminal offers prebuilt or source installation; other platforms build from source. The source path also lets you select apps and optional features. For an unconfigured install, the installer then offers CLI or browser-based Quickstart. Use `--skip-quickstart` when you only want to install.
-
-> **Working on the docs?** The translated documentation catalogues live in a
-> git submodule (`docs/book/po`). The Rust build does not need it, but building
-> or syncing the docs does. Clone with it, or add it to an existing clone:
->
-> ```bash
-> git clone --recurse-submodules https://github.com/zeroclaw-labs/zeroclaw.git
-> git submodule update --init docs/book/po   # existing clone
-> ```
-
-Flags:
+## Example real run
 
 ```
-./install.sh --prebuilt              # always prebuilt; don't ask
-./install.sh --source                # always build from source
-./install.sh --preset minimal        # kernel-only source preset (~6.6 MB)
-./install.sh --minimal               # alias for --preset minimal
-./install.sh --source --features agent-runtime,channel-discord  # custom feature set
-./install.sh --apps zerocode         # select apps to install; use "none" to skip all
-./install.sh --without-tui           # skip building zerocode
-./install.sh --with-gateway          # force gateway support on
-./install.sh --without-gateway       # force gateway support off
-./install.sh --prefix /tmp/zc-test   # install under a custom prefix
-./install.sh --dry-run --prebuilt    # preview without installing
-./install.sh --skip-quickstart       # install only, run `zeroclaw quickstart` later
-./install.sh --list-features         # print available feature flags
-./install.sh --uninstall             # remove ZeroClaw
+Input: google_ads (120 signups, $400 spend, 4% conversion), twitter_ads (350 signups, $300 spend, 8% conversion)
+Budget cap: 0.01 SOL
+
+Output:
+{
+  "chosen_channel": "twitter_ads",
+  "reasoning": "Twitter ads have a higher conversion rate and more signups compared to Google ads...(capped from $200.00 to budget limit $0.01)",
+  "amount": 0.01,
+  "status": "success",
+  "tx_signature": "5f2QR6HTkKpW7ZVGD98cabwwu5EvFU8Ayn2mhAV1E7aebbK1WUr28MmzQvdSqotifpzKRSE9ywmvhkzvXve9h3ac"
+}
 ```
 
-Platform-specific notes: [Linux](docs/book/src/setup/linux.md) · [macOS](docs/book/src/setup/macos.md) · [Windows](docs/book/src/setup/windows.md) · [FreeBSD](docs/book/src/setup/freebsd.md) · [NixOS](docs/book/src/setup/nixos.md) · [Docker](docs/book/src/setup/container.md)
+Verify it yourself: [explorer.solana.com/tx/5f2QR6...devnet](https://explorer.solana.com/tx/5f2QR6HTkKpW7ZVGD98cabwwu5EvFU8Ayn2mhAV1E7aebbK1WUr28MmzQvdSqotifpzKRSE9ywmvhkzvXve9h3ac?cluster=devnet)
 
-## Quick start
+## Custody tier: T1 (build, human approves)
 
-```bash
-zeroclaw quickstart               # one-shot setup: pick a provider, write a working config
-zeroclaw agent -a <alias>         # interactive chat using the [agents.<alias>] entry
-zeroclaw service install          # register as systemd/launchctl/Windows Service
-zeroclaw service start            # run it always-on in the background
-```
+The agent never signs or submits a transaction on its own. It proposes; a human approves or declines. No secrets beyond the LLM and wallet keys are held by the model itself.
 
-Full walkthrough: [Quick start](docs/book/src/getting-started/quickstart.md) — or skip the safety gates with [YOLO mode](docs/book/src/getting-started/yolo.md) for dev boxes.
-
-## What ZeroClaw does
-
-- **Multi-channel** — one agent answering you across [every channel you configure](docs/book/src/channels/overview.md). Inbound messages from Discord, Telegram, Matrix, email, webhooks, CLI — all delivered to the same agent loop.
-- **Provider-agnostic** — [model providers](docs/book/src/providers/overview.md) are pluggable. Configure Anthropic, OpenAI, local Ollama, or any OpenAI-compatible endpoint. [Fallback chains and routing](docs/book/src/providers/routing.md) keep the agent running when a provider flakes.
-- **Security-first, with escape hatches** — default autonomy is `supervised`: medium-risk ops require approval, high-risk blocked. Workspace boundaries, command policy, OS-level sandboxes (Landlock / Bubblewrap / Seatbelt / Docker), and cryptographic [tool receipts](docs/book/src/security/tool-receipts.md) on every action. [YOLO mode](docs/book/src/getting-started/yolo.md) exists for trusted dev environments.
-- **Hardware-capable** — GPIO / I2C / SPI / USB on Raspberry Pi, STM32, Arduino, and ESP32 via the `Peripheral` trait. See [Hardware](docs/book/src/hardware/index.md).
-- **Gateway + dashboard** — HTTP / WebSocket gateway for clients, with a web dashboard for chat, memory browsing, config editing, cron management, and tool inspection.
-- **SOP engine** — event-triggered [Standard Operating Procedures](docs/book/src/sop/index.md) (MQTT / webhook / cron / peripheral) with approval gates and resumable runs.
-- **ACP** — IDE / editor integration via [Agent Client Protocol](docs/book/src/channels/acp.md) (JSON-RPC 2.0 over stdio).
-
-## Configuration
-
-One TOML file at `~/.zeroclaw/config.toml`. Pointers:
-
-- [Provider configuration](docs/book/src/providers/configuration.md) — the universal `[providers.models.<type>.<alias>]` schema
-- [Channels overview](docs/book/src/channels/overview.md) — per-channel `[channels.<type>.<alias>]` blocks
-- [Security overview](docs/book/src/security/overview.md) — autonomy, sandboxing, tool receipts
-- [Full config reference](https://docs.zeroclawlabs.ai/master/en/reference/config.html) — generated from the live schema; every key documented
-
-A V3 config has at minimum four section headers (`<type>.<alias>` shaped) — a provider entry, an agent that references it, and a risk profile the agent gates against. See [Provider Configuration → Minimal working example](docs/book/src/providers/configuration.md#minimal-working-example) for the canonical four-section form with inline type/alias commentary.
-
-For standard OpenAI Codex subscription auth, Quickstart can write the provider
-entry for you:
-
-```bash
-zeroclaw auth login --model-provider openai-codex --import ~/.codex/auth.json  # if already signed in with Codex CLI
-zeroclaw quickstart --model-provider openai-codex --model gpt-5.4
-```
-
-The provider entry uses the canonical OpenAI shape; the alias below is an
-example:
-
-```toml
-[providers.models.openai.coding]   # type = openai; alias = coding (you choose)
-model = "gpt-5.4"
-wire_api = "responses"
-requires_openai_auth = true
-```
-
-…and point your agent at it with `model_provider = "openai.<alias>"`.
-
-Notes:
-
-- Normal OpenAI Codex subscription auth uses stored auth profiles, not an `api_key` on the provider entry.
-- Claude Max setup-token auth stays on the canonical Anthropic slot: run `claude setup-token`, choose `setup_token` in Quickstart, and paste the generated token into the API key/token prompt.
-- Only set `api_key` / `uri` on `[providers.models.openai.<alias>]` when intentionally targeting a custom OpenAI-compatible gateway or endpoint.
-- If you see `provider streaming failed, falling back to non-streaming chat`, ZeroClaw retries the same request in non-streaming mode. Check `zeroclaw auth status` before changing provider config.
+**Tested:** we tried prompt-injecting the agent to ignore its budget cap and to redirect funds to a different wallet.
+- The hard-coded budget cap held — a request to send far more than the cap was rejected/clamped every time, regardless of the message claiming "owner approval."
+- The wallet-redirect attempt was **not** blocked in code, but the substituted destination was visible in the human approval prompt before anything sent — a reviewing human would catch it. This is a known limitation, documented here rather than hidden: destination is currently protected by human review, not a code-level allowlist. A destination allowlist enforced the same way as the budget cap is the natural next step.
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│            channels       gateway        ACP                 │
-│          (30+ adapters)   (REST/WS)    (JSON-RPC)            │
-│                        ↓                                     │
-│                   ZeroClaw runtime                           │
-│         ┌──────────┬──────────┬──────────┐                   │
-│         │  agent   │ security │   SOP    │                   │
-│         │   loop   │  policy  │  engine  │                   │
-│         └──────────┴──────────┴──────────┘                   │
-│              ↓          ↓           ↓                        │
-│          providers    tools      memory                      │
-│         (Anthropic,  (shell,    (SQLite,                     │
-│          OpenAI,     browser,    embeddings)                 │
-│          Ollama,     HTTP,                                   │
-│          ~20 more)   hardware)                               │
-└──────────────────────────────────────────────────────────────┘
-```
+- **Runtime:** Zeroclaw (Rust), plugin implemented via the `Tool` trait in `crates/zeroclaw-tools/src/marketing_copilot.rs`
+- **LLM provider:** Groq (`llama-3.1-8b-instant` / `llama-3.3-70b-versatile`), swappable via Zeroclaw's provider config
+- **On-chain execution:** shells out to the Solana CLI (`solana transfer ... --output json`) rather than embedding a raw Solana SDK integration
+- **Channel:** Discord, via Zeroclaw's built-in Discord channel support
+- **Approval flow:** Zeroclaw's native approval-gate mechanism — the agent's tool call pauses and waits for an explicit human reply before executing
 
-Full detail with Mermaid diagrams: [Architecture overview](docs/book/src/architecture/overview.md) · [Request lifecycle](docs/book/src/architecture/request-lifecycle.md) · [Crates](docs/book/src/architecture/crates.md).
+## Reproducing this
 
-## Contributing
+1. Clone and build [Zeroclaw](https://github.com/zeroclaw-labs/zeroclaw) from source: `cargo build --release`
+2. Copy this plugin's code into `crates/zeroclaw-tools/src/marketing_copilot.rs` and register it per `crates/zeroclaw-tools/src/lib.rs`
+3. Set up a Discord bot (Developer Portal → enable Message Content Intent), add its token to config
+4. Get a free Groq API key from [console.groq.com](https://console.groq.com/keys)
+5. Create a Solana devnet wallet and fund it via a devnet faucet: `solana-keygen new`, `solana config set --url devnet`, request devnet SOL
+6. Configure `~/.zeroclaw/config.toml` — set your Groq API key, Discord bot token, and add a risk-profile tool allowlist restricting the agent to `marketing_copilot` (this keeps requests within free-tier LLM rate limits)
+7. Run `cargo run -- daemon`, message the bot in Discord, and approve when prompted
 
-Start with [how to contribute](docs/book/src/contributing/how-to.md). Larger changes go through the [RFC process](docs/book/src/contributing/rfcs.md). Real-time chat lives on [Discord](https://discord.gg/zeroclaw) (the best way to reach the team); durable work tracking is on [GitHub issues](https://github.com/zeroclaw-labs/zeroclaw/issues).
+## What's next
 
-Good places to start:
-
-- New channel → `crates/zeroclaw-channels/`
-- New provider → `crates/zeroclaw-providers/`
-- New tool → `crates/zeroclaw-tools/`
-- Hardware support → `crates/zeroclaw-hardware/`
-- Docs → `docs/book/src/`
-
-AI-assisted PRs are welcome; see [Contribution culture (RFC #5615)](https://github.com/zeroclaw-labs/zeroclaw/issues/5615) for the co-authorship norms.
-
-<!-- BEGIN:RECENT_CONTRIBUTORS -->
-<!-- END:RECENT_CONTRIBUTORS -->
-
-## Security
-
-Do not file public issues for security vulnerabilities. Email `security@zeroclaw.dev`. See [SECURITY.md](SECURITY.md) for the full policy.
-
-## Official repository & impersonation notice
-
-This is the only official ZeroClaw repository:
-
-> <https://github.com/zeroclaw-labs/zeroclaw>
-
-Any other repository, organization, domain, or package claiming to be "ZeroClaw" or implying affiliation with ZeroClaw Labs is **unauthorized and not affiliated with this project**.
+- Add a destination-wallet allowlist enforced in code, closing the gap found in prompt-injection testing
+- Durable-nonce handling for approval flows that take longer than a blockhash's validity window
+- Support for real (non-mock) traction data sources
 
 ## License
 
-Dual-licensed: [MIT](LICENSE-MIT) OR [Apache 2.0](LICENSE-APACHE). You may choose either. Contributors automatically grant rights under both — see [CLA](docs/book/src/contributing/cla.md). The **ZeroClaw** name and logo are trademarks of ZeroClaw Labs.
-
-## Credits
-
-Built and maintained by the community — original creator [@theonlyhennygod](https://github.com/theonlyhennygod); project lead [@JordanTheJet](https://github.com/JordanTheJet). Full maintainer list in [Communication](docs/book/src/contributing/communication.md).
-
-Thanks to the communities that incubated early work: **Harvard University**, **MIT**, **Sundai Club**, and every contributor pushing it forward.
-
-<p align="center">
-  <a href="https://www.star-history.com/#zeroclaw-labs/zeroclaw&type=date&legend=top-left">
-    <picture>
-     <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=zeroclaw-labs/zeroclaw&type=date&theme=dark&legend=top-left" />
-     <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=zeroclaw-labs/zeroclaw&type=date&legend=top-left" />
-     <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=zeroclaw-labs/zeroclaw&type=date&legend=top-left" />
-    </picture>
-  </a>
-</p>
-
-<p align="center">
-  <a href="https://github.com/zeroclaw-labs/zeroclaw/graphs/contributors">
-    <img src="https://contrib.rocks/image?repo=zeroclaw-labs/zeroclaw" alt="ZeroClaw contributors" />
-  </a>
-</p>
+MIT
